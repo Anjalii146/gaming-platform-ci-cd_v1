@@ -1,105 +1,104 @@
 name: Gaming Platform CI/CD Pipeline
 
 on:
-  push:
-    branches:
-      - main
-
-  push:
-    tags:
-      - 'v*'
+push:
+branches:
+- main
+tags:
+- 'v*'
 
 jobs:
 
-  validate-code:
+validate-code:
+runs-on: ubuntu-latest
 
-    runs-on: ubuntu-latest
+```
+steps:
+  - name: Checkout Repository
+    uses: actions/checkout@v4
 
-    steps:
+  - name: Setup Python
+    uses: actions/setup-python@v5
+    with:
+      python-version: '3.11'
 
-      - name: Checkout Repository
-        uses: actions/checkout@v4
+  - name: Install Dependencies
+    run: |
+      pip install -r requirements.txt
 
-      - name: Setup Python
-        uses: actions/setup-python@v5
-        with:
-          python-version: '3.11'
+  - name: Verify Flask Application
+    run: |
+      python -m py_compile app.py
+```
 
-      - name: Install Dependencies
-        run: |
-          pip install -r requirements.txt
+build-artifact:
+needs: validate-code
 
-      - name: Verify Flask Application
-        run: |
-          python -m py_compile app.py
+```
+runs-on: ubuntu-latest
 
-  build-artifact:
+steps:
+  - name: Checkout Repository
+    uses: actions/checkout@v4
 
-    needs: validate-code
+  - name: Create Build Package
+    run: |
+      mkdir artifact
+      cp app.py artifact/
+      cp Dockerfile artifact/
+      cp requirements.txt artifact/
+      cp -r templates artifact/
+      zip -r gaming-platform-build.zip artifact
 
-    runs-on: ubuntu-latest
+  - name: Upload Build Artifact
+    uses: actions/upload-artifact@v4
+    with:
+      name: gaming-platform-build
+      path: gaming-platform-build.zip
+```
 
-    steps:
+docker-release:
+if: startsWith(github.ref, 'refs/tags/v')
 
-      - name: Checkout Repository
-        uses: actions/checkout@v4
+```
+needs:
+  - validate-code
+  - build-artifact
 
-      - name: Create Build Package
-        run: |
-          mkdir artifact
-          cp app.py artifact/
-          cp Dockerfile artifact/
-          cp requirements.txt artifact/
-          zip -r gaming-platform-build.zip artifact
+runs-on: ubuntu-latest
 
-      - name: Upload Build Artifact
-        uses: actions/upload-artifact@v4
-        with:
-          name: gaming-platform-build
-          path: gaming-platform-build.zip
+permissions:
+  contents: write
 
-  docker-release:
+steps:
+  - name: Checkout Repository
+    uses: actions/checkout@v4
 
-    if: startsWith(github.ref, 'refs/tags/v')
+  - name: Get Commit SHA
+    id: vars
+    run: echo "sha_short=$(git rev-parse --short HEAD)" >> $GITHUB_OUTPUT
 
-    needs:
-      - validate-code
-      - build-artifact
+  - name: Login To Docker Hub
+    uses: docker/login-action@v3
+    with:
+      username: ${{ secrets.DOCKER_USERNAME }}
+      password: ${{ secrets.DOCKER_PASSWORD }}
 
-    runs-on: ubuntu-latest
+  - name: Build Docker Image
+    run: |
+      docker build -t anjali146/gaming-platform:${{ github.ref_name }} .
+      docker tag anjali146/gaming-platform:${{ github.ref_name }} anjali146/gaming-platform:${{ steps.vars.outputs.sha_short }}
 
-    permissions:
-      contents: write
+  - name: Push Semantic Version Tag
+    run: |
+      docker push anjali146/gaming-platform:${{ github.ref_name }}
 
-    steps:
+  - name: Push Commit SHA Tag
+    run: |
+      docker push anjali146/gaming-platform:${{ steps.vars.outputs.sha_short }}
 
-      - name: Checkout Repository
-        uses: actions/checkout@v4
-
-      - name: Get Commit SHA
-        id: vars
-        run: echo "sha_short=$(git rev-parse --short HEAD)" >> $GITHUB_OUTPUT
-
-      - name: Login To DockerHub
-        uses: docker/login-action@v3
-        with:
-          username: ${{ secrets.DOCKER_USERNAME }}
-          password: ${{ secrets.DOCKER_PASSWORD }}
-
-      - name: Build Docker Image
-        run: |
-          docker build -t anjali146/gaming-platform:${{ github.ref_name }} .
-          docker tag anjali146/gaming-platform:${{ github.ref_name }} anjali146/gaming-platform:${{ steps.vars.outputs.sha_short }}
-
-      - name: Push Version Tag
-        run: |
-          docker push anjali146/gaming-platform:${{ github.ref_name }}
-
-      - name: Push Commit SHA Tag
-        run: |
-          docker push anjali146/gaming-platform:${{ steps.vars.outputs.sha_short }}
-
-      - name: Create GitHub Release
-        uses: softprops/action-gh-release@v2
-        with:
-          generate_release_notes: true
+  - name: Create GitHub Release
+    uses: softprops/action-gh-release@v2
+    with:
+      generate_release_notes: true
+```
