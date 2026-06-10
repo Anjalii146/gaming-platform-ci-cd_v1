@@ -1,0 +1,99 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Gaming Platform Dashboard</title>
+
+    <style>
+
+        *{
+            margin:0;
+            padding:0;
+            box-sizing:border-box;
+            font-family:Arial, sans-serif;
+        }
+
+        body{
+            background:#121212;
+            color:white;
+            padding:40px;
+        }
+
+        h1{
+            text-align:center;
+            color:#00ff88;
+            margin-bottom:30px;
+        }
+
+        .container{
+            display:flex;
+            justify-content:center;
+            gap:20px;
+            flex-wrap:wrap;
+        }
+
+        .card{
+            background:#1f1f1f;
+            padding:20px;
+            width:250px;
+            border-radius:12px;
+            text-align:center;
+            box-shadow:0 0 10px rgba(255,255,255,0.1);
+        }
+
+        .value{
+            font-size:32px;
+            font-weight:bold;
+            color:#00ff88;
+            margin-top:10px;
+        }
+
+        .status{
+            color:#00ff88;
+            font-weight:bold;
+        }
+
+        .footer{
+            text-align:center;
+            margin-top:40px;
+            color:#aaa;
+        }
+
+    </style>
+</head>
+
+<body>
+
+    <h1>🎮 Gaming Platform CI/CD Dashboard</h1>
+
+    <div class="container">
+
+        <div class="card">
+            <h3>System Status</h3>
+            <div class="value status">Running</div>
+        </div>
+
+        <div class="card">
+            <h3>Active Players</h3>
+            <div class="value">420</div>
+        </div>
+
+        <div class="card">
+            <h3>Live Streams</h3>
+            <div class="value">12</div>
+        </div>
+
+        <div class="card">
+            <h3>Latency</h3>
+            <div class="value">35 ms</div>
+        </div>
+
+    </div>
+
+    <div class="footer">
+        Version 1.0.0 | DevOps Release Automation Demo
+    </div>
+
+</body>
+</html>
