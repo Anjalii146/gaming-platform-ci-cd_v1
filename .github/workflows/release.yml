@@ -1,12 +1,71 @@
-name: Docker Release Pipeline
+name: Gaming Platform CI/CD Pipeline
 
 on:
+  push:
+    branches:
+      - main
+
   push:
     tags:
       - 'v*'
 
 jobs:
-  build-and-release:
+
+  validate-code:
+
+    runs-on: ubuntu-latest
+
+    steps:
+
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install Dependencies
+        run: |
+          pip install -r requirements.txt
+
+      - name: Verify Flask Application
+        run: |
+          python -m py_compile app.py
+
+  build-artifact:
+
+    needs: validate-code
+
+    runs-on: ubuntu-latest
+
+    steps:
+
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Create Build Package
+        run: |
+          mkdir artifact
+          cp app.py artifact/
+          cp Dockerfile artifact/
+          cp requirements.txt artifact/
+          zip -r gaming-platform-build.zip artifact
+
+      - name: Upload Build Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: gaming-platform-build
+          path: gaming-platform-build.zip
+
+  docker-release:
+
+    if: startsWith(github.ref, 'refs/tags/v')
+
+    needs:
+      - validate-code
+      - build-artifact
+
     runs-on: ubuntu-latest
 
     permissions:
@@ -17,11 +76,11 @@ jobs:
       - name: Checkout Repository
         uses: actions/checkout@v4
 
-      - name: Get Short Commit SHA
+      - name: Get Commit SHA
         id: vars
         run: echo "sha_short=$(git rev-parse --short HEAD)" >> $GITHUB_OUTPUT
 
-      - name: Login to Docker Hub
+      - name: Login To DockerHub
         uses: docker/login-action@v3
         with:
           username: ${{ secrets.DOCKER_USERNAME }}
@@ -32,11 +91,11 @@ jobs:
           docker build -t anjali146/gaming-platform:${{ github.ref_name }} .
           docker tag anjali146/gaming-platform:${{ github.ref_name }} anjali146/gaming-platform:${{ steps.vars.outputs.sha_short }}
 
-      - name: Push Semantic Version Image
+      - name: Push Version Tag
         run: |
           docker push anjali146/gaming-platform:${{ github.ref_name }}
 
-      - name: Push Commit SHA Image
+      - name: Push Commit SHA Tag
         run: |
           docker push anjali146/gaming-platform:${{ steps.vars.outputs.sha_short }}
 
