@@ -1,0 +1,26 @@
+apiVersion: apps/v1
+kind: Deployment
+
+metadata:
+  name: gaming-platform
+
+spec:
+  replicas: 3
+
+  selector:
+    matchLabels:
+      app: gaming-platform
+
+  template:
+    metadata:
+      labels:
+        app: gaming-platform
+
+    spec:
+      containers:
+      - name: gaming-platform
+        image: gaming-platform:latest
+        imagePullPolicy: Never
+
+        ports:
+        - containerPort: 5000
